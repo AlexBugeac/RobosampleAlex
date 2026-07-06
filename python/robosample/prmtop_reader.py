@@ -130,7 +130,15 @@ def has_nbfix_fast(
     calc_A = expected_E * expected_R**12
     calc_B = 2 * expected_E * expected_R**6
 
-    bad_A = np.abs((actual_A - calc_A) / actual_A) > 1e-6
-    bad_B = np.abs((actual_B - calc_B) / actual_B) > 1e-6
+    # Relative error, guarded against zero denominators (actual_A/B == 0 for atoms
+    # with no LJ well, e.g. many H): 0/0 -> not bad, nonzero/0 -> bad. Avoids the
+    # spurious 'invalid value encountered in divide' RuntimeWarning.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        rel_A = np.abs((actual_A - calc_A) / actual_A)
+        rel_B = np.abs((actual_B - calc_B) / actual_B)
+    rel_A = np.where(actual_A != 0, rel_A, np.where(np.abs(actual_A - calc_A) > 0, np.inf, 0.0))
+    rel_B = np.where(actual_B != 0, rel_B, np.where(np.abs(actual_B - calc_B) > 0, np.inf, 0.0))
+    bad_A = rel_A > 1e-6
+    bad_B = rel_B > 1e-6
 
     return np.any((bad_A | bad_B) & mask)

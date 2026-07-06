@@ -1022,6 +1022,21 @@ class Context(rb.Context):
 
     def initialize(self, replicaTemperatures: list[float]):
 
+        # Guards: clearer errors than the opaque downstream failures these cause.
+        if not self.worlds:
+            raise RuntimeError(
+                "initialize() called with no worlds; add at least one world "
+                "(add_cartesian_world/add_robotic_world) before initialize()."
+            )
+        if not replicaTemperatures:
+            raise ValueError(
+                "initialize() requires at least one replica temperature (got empty list)."
+            )
+        if any(t <= 0 for t in replicaTemperatures):
+            raise ValueError(
+                f"replica temperatures must be positive Kelvin (got {replicaTemperatures})."
+            )
+
         # Load the system into Robosample
         super().loadAmberSystem(
             self.system_topology,

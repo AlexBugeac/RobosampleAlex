@@ -41,7 +41,15 @@ context.add_cartesian_world(temperature=300).add_sampler(
 mask_phi = context.standard_dihedral_bonds["dihedral_type"] == "phi"
 mask_psi = context.standard_dihedral_bonds["dihedral_type"] == "psi"
 bonds = context.standard_dihedral_bonds[mask_phi | mask_psi]
-sele = context.build_flexibilities(bonds, robosample.rb.BondMobility.Torsion, False)
+# Flat list of raw-prmtop-index BondFlexibility (add_robotic_world converts to BAT).
+# NB: build_flexibilities() returns a nested/pre-converted structure add_robotic_world rejects.
+sele = []
+for _, bond in bonds.iterrows():
+    flex = robosample.rb.BondFlexibility()
+    flex.globalIndex1 = int(bond["atom1_parmed_index"])
+    flex.globalIndex2 = int(bond["atom2_parmed_index"])
+    flex.mobility = robosample.rb.BondMobility.Torsion
+    sele.append(flex)
 context.add_robotic_world(sele, temperature=3000).add_sampler(
     timeStep=0.025,
     mdSteps=20,  # ignored if using NUTS
