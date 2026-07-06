@@ -5,6 +5,43 @@
 (fork AlexBugeac/RobosampleAlex) — all night's work committed here, tagged `[disasm]`/`[accel]`;
 branch reorganization is a morning cleanup.
 
+## ☀️ MORNING REPORT (draft — finalize at 07:22)
+
+**TL;DR:** Both topics delivered concrete, measured, honest results. disasm's RobotEngine is
+validated correct on **four independent axes**; the accel direction is now backed by **two live
+measurements** (not just literature). Zero E2 involvement; 3 E2 sims protected & untouched.
+
+**Topic 1 — disasm validation & benchmarks**
+- Tier-0 (C++ kinetic/equipartition invariants): **9/9 PASS**.
+- Tier-1 (PE ladder vs native OpenMM Langevin): **7/7 PASS**.
+- Butane torsion, **independent native-OpenMM oracle**: **PASS** (anti 0.80 = 0.80) — validates
+  configurational sampling with a *different* trusted engine, not the Claude-written suite.
+- Ala-dipeptide solvated backbone (φ/ψ Ramachandran vs OpenMM-OBC2): **RESOLVED** — φ fully
+  mobile, both basins populated, dmax 0.66→**0.19**; residual = flexible-DOF/undersampling of the
+  αR↔C7eq ratio, **not** sampler bias. (Two self-caught *harness* bugs en route: solvent mismatch,
+  then an int-code φ/ψ filter — never the engine.)
+- 2-butanol Tier-2: root-caused (bin-centre Boltzmann weighting) + fixed (sub-grid PMF), chi2
+  9055→590 (15×); still over strict crit — understood as reference-resolution/test-budget. [close-out: <status>]
+
+**Topic 2 — accel-engine direction (measured)**
+- 4-pillar GPU/AI research → DESIGN.md. Verdict: **not** a full GPU-robot rewrite; MC-precision is
+  the gate (robotics-fp32 & ML-potentials disqualified).
+- **Phase-B MEASURED:** small system, CPU **37** vs CUDA **71** ms/round → CPU **~1.9× faster**.
+- **Phase-A MEASURED:** CUDA round 65.5 ms = **61% per-step force-server** + 39% dynamics+Fixman.
+- ⟹ Coherent, high-confidence priority: **kill the round-trip (CPU platform for small systems)
+  first** (Pillar 3); batched-replica GPU ABA (Pillar 2) is the at-scale/secondary target.
+
+**Honest residuals / not done:** ala dmax 0.19 not driven to <0.12 (would need matched DOF or REMC);
+2-butanol strict-crit close-out [<status>]; JAX batched-replica PoC (Phase C) not started; profiler
+force-server split is a coarse estimate. **Build ergonomics:** BUILD-NOTES.md (3 configure blockers +
+attrs dep + bootstrap.sh proposal).
+
+**Recommended next steps (morning):** (1) branch cleanup/PR organization; (2) implement the CPU-platform
+switch for small systems (near-free win, one-liner) + re-measure; (3) optional REMC ala to tighten 0.19;
+(4) Phase-C JAX PoC if pursuing batched replicas.
+
+---
+
 ## Two topics (balance both)
 - **T1 — Improve + test + benchmark `disasm`:** finish Phase-0 validation baseline, write an
   INDEPENDENT external-oracle test (`exp(−βU)` + native-OpenMM cross-check, since the suite is
