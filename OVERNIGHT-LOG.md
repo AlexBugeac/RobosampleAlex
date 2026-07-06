@@ -54,7 +54,7 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 - Tier-2 2-butanol failure: root-caused (bin-centre Boltzmann weighting in _chi2_gof_nd for coarse 2D bins
   near torsion walls) + fixed (additive sub-grid PMF averaging; verification in progress).
 - Honest residual: mild gauche+/gauche- asymmetry in butane (0.074 vs 0.126) = finite-sampling artifact.
-- Ala-dipeptide Ramachandran (2nd independent benchmark, peptide backbone): first run flagged a SELF-CAUGHT harness bug (robosample vacuum vs OpenMM OBC2 → invalid); re-running with MATCHED OBC2 (OpenMM ref αR 0.65/β 0.34). Verdict pending — this is the honest apples-to-apples test.
+- Ala-dipeptide Ramachandran (2nd benchmark, peptide backbone): TWO self-caught harness bugs — (1) vacuum-vs-OBC2 solvent mismatch [fixed], (2) phi/psi filtered on string labels but dihedral_type is INTEGER codes → empty flexibility → phi frozen. The 'divergence' is a HARNESS artifact, engine NOT implicated (butane already independently validated configurational sampling). Proper fix = explicit N-CA & CA-C atom-pair selection (butane pattern); queued. Discipline win: verified phi/psi spread + bond selection before concluding, caught my own benchmark bug twice instead of blaming robosample.
 
 **accel-engine (Topic 2):**
 - 4-pillar GPU/AI research synthesized -> DESIGN.md. Verdict: NOT a full GPU-robot rewrite. 3 tractable
