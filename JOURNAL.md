@@ -59,7 +59,16 @@ Maintained by Claude (Opus 4.8) on Alex's behalf. Newest entries at top.
 | `setActiveForceGroup` / A1 mismatch | critical | **NOT a bug** (intra-rigid cancels; both OpenMM) | no |
 | NMA-boost KE transpose | critical | real, `DistortOpt>0` only | no (standard runs) |
 | Metropolis ratio, Fixman | — | verified IDENTICAL to singularity, correct | — |
-**Net: one real ensemble-corrupting bug (REMC, fixed); one conditional (momentum, workaround); the rest benign/boost-only/optimization. The "verify before alarming" discipline overturned 2 of 5 critical claims.**
+**Net: one real ensemble-corrupting bug (REMC, fixed); one conditional (momentum, workaround); the rest benign/boost-only/optimization. The "verify before alarming" discipline overturned 3 of 5 critical claims (validate filter, setActiveForceGroup, AND — later — the improper-torsion ×2).**
+
+### 4-specialist diagnostic panel (sampling · structural-bioinformatics · RSE · HPC)
+Full diagnosis + prioritized roadmap → vault `30-Resources/Methods/robosample-diagnosis.md`. Headlines:
+- **Sampling:** plain GCHMC+T-REMC gives NO barrier lowering → cannot cross the AS412 barrier at feasible cost (W1); T-REMC N-scaling wall (W2). Fixes that fit Alex's toolkit: REST2/solute-scaling H-REMC, CV-bias/OPES on the AS412 CV (his own d413-451/d418-527), MBAR+ESS.
+- **Structural bioinformatics:** FATAL for E2 — no explicit solvent (GB-only, `OpenMM.cpp:636`); Alex's own data shows the glycan effect is invisible in implicit (Δ+0.06Å) vs explicit (Δ−2.10Å). Glycan/nucleic dihedral classifiers commented out (`amber_dihedral.py:815`). Torsional-only freezes ring pucker + backbone-angle.
+- **RSE:** test suite is FALSELY GREEN (every sampler test calls non-existent methods → AttributeError; badge measures only math helpers); nothing guards against reintroducing the fixed bugs. Golden-ensemble + detailed-balance tests (~2 days) would've caught both.
+- **HPC:** GPU used as a per-MD-step force server in the default VERLET path → latency-bound; for peptides CUDA is likely SLOWER than CPU (P1). `realizeTopology()` per world transfer (P2). Serial replicas, no batching (P4). Quick wins: default small systems to CPU (2-10×), fuse syncs, gate stdout, vectorize pandas.
+
+**STRATEGIC CONCLUSION:** for the E2 glycoprotein problem specifically, robosample is NOT the right primary tool — explicit solvent + AS412 barrier-crossing are things Alex ALREADY has in his OpenMM+PLUMED/OPES pipeline (which produced his actual primary evidence). Robosample's viable role = fast GB/vacuum torsional conformer generator feeding explicit-solvent validation, AFTER re-enabling glycan classifiers. Frontier = `disasm` (explicit solvent + NCMC) once its Tier-2 validation is green.
 
 **🟡 Structural:** only 4 Python modules are the real library; `build_flexibilities`/`create_torsional_bonds`/`selectBonds` all broken vs `add_robotic_world`; OpenMM fork ~stock 8.5, real patches in Simbody/Molmodel forks; sampler test coverage ≈ nil (`test_fixman_potential.py` 100% commented); classic `inp.*` format removed (Python API only).
 
