@@ -33,7 +33,7 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 - [x] T1.a ✅ disasm API learned (`AmberDihedralClassifier`→`Context(name,seed,clf)`→`load_amber`→worlds→`run_rex`); `attrs` dep installed; module imports
 - [x] T1.b ✅ Tier-1 PE-ladder 7/7 PASS (vs native OpenMM). Tier-2 4-fail reproduction pending.
 - [x] T1.c ✅ independent OpenMM oracle: robosample butane anti=0.80 MATCHES OpenMM 0.80 -> sampler CORRECT
-- [ ] T1.d Fix 2-butanol Tier-2 (sub-grid Boltzmann weighting, `test_torsion_conformational.py:306`)
+- [~] T1.d PARTIAL: 2-butanol sub-grid fix -> chi2 9055→590 (15x); residual needs subdiv=8+ or more sampling
 - [ ] T1.e Ethane equipopulation discriminating run (~20 min): test-side vs real RobotEngine bias?
 - [ ] T1.f Benchmark: alanine dipeptide φ/ψ free-energy surface vs reference; then deca-alanine
 - [ ] T1.g Fix remaining Tier-2 (raise N_eff, calibrate bands)
@@ -66,6 +66,7 @@ configurational sampling. The failing Tier-2 tests are test-config, not engine b
 disasm is a trustworthy base once its Tier-2 suite is finished.
 
 ## Ledger (newest first)
+- 01:16 2-butanol fix VERIFIED (partial, honest): chi2 9055 -> 590 with the sub-grid fix (15x reduction) — confirms bin-centre weighting was ~93% of the artifact. STILL fails (crit=160, n_used=7500): residual from subdiv=4 insufficient near steep walls AND/OR 2D undersampling. Fix is directionally correct + major but incomplete; next = subdiv=8-16 + more prod. Did NOT loosen bands. (Sampler itself validated correct via butane MATCH — this residual is test-config, not engine bias.)
 - 01:11 2-butanol verify still running (~23min, GPU 100%) — progressing but pytest -q hides the move counter (lesson: use -s for long-run monitoring). NOTE: my sub-grid fix makes _reference_pe_grid do subdiv^2=16x more PE evals (2 calls) — minor extra setup cost, acceptable. Letting it finish; key validations already banked.
 - 01:05 accel A/B CPU-half parallel attempt FAILED (ImportError 'circular import' from copied CPU package — copy artifact or CPU .so load issue). Deferred: run accel_ab.sh via the in-place symlink swap when GPU frees (tested path). 2-butanol verify (v2but-svc) still running (~18min, long 2D GCHMC).
 - 00:48 *** KEY RESULT: butane independent validation PASSES. robosample anti=0.800 vs native-OpenMM oracle 0.798 (diff 0.002) => MATCH. The RobotEngine samples the correct CONFIGURATIONAL distribution (external cross-engine oracle, not the Claude-written suite). Tier-2 failures = test-budget/undersampling, NOT sampler bias — confirms devs' hypothesis + the 2-butanol fix rationale. Residual mild gauche asymmetry (0.074 vs 0.126) = finite-sampling artifact (slow g+<->g- crossing), not bias.
