@@ -255,6 +255,35 @@ def _reference_pe_grid(mol: MoleculeSpec, phi_grids: dict[str, np.ndarray], *, g
     return pe, force_class_names
 
 
+def _subgrid_pmf(mol, edges_dict, torsion_names, T, subdiv=4, group_indices=None):
+    """Per-coarse-bin PMF U_bin = -kT*ln<exp(-beta*U)>_subgrid.
+
+    Fixes the bin-CENTRE Boltzmann-weight bias that inflates chi2 for coarse 2D
+    bins near a steep torsion wall (2-butanol T2.0): the correct per-bin weight is
+    the bin-AVERAGED exp(-beta*U), not exp(-beta*U(centre)). Evaluates PE on a
+    `subdiv`-per-bin finer grid and averages. Returned as an effective per-bin PMF
+    so it drops into the UNCHANGED _chi2_gof_nd via the existing ref_pe_grid arg
+    (which recomputes exp(-beta*(U-U.min())) -> exactly the bin-averaged weights).
+    Additive: only the 2-butanol fixture uses it; all 1D tests are unaffected.
+    NOTE: does NOT loosen any band -- it makes the reference MORE correct.
+    """
+    beta = 1.0 / (KB * T)
+    fine, nb = {}, {}
+    for name in torsion_names:
+        e = edges_dict[name]
+        nb[name] = len(e) - 1
+        pts = [e[i] + (np.arange(subdiv) + 0.5) * (e[i + 1] - e[i]) / subdiv for i in range(nb[name])]
+        fine[name] = np.concatenate(pts)
+    grids = {t.name: fine[t.name] for t in mol.torsions}
+    pe, _ = _reference_pe_grid(mol, grids, group_indices=group_indices)
+    wfine = np.exp(-beta * (pe - pe.min()))
+    shape = []
+    for t in mol.torsions:
+        shape += [nb[t.name], subdiv]
+    wbin = wfine.reshape(shape).mean(axis=tuple(range(1, 2 * len(mol.torsions), 2)))
+    return -(1.0 / beta) * np.log(wbin)
+
+
 _N_BINS_1D = 36  # 10 degree bins -- finer bins sharpen a SHAPE mismatch
 # (verified interactively: halving to 24/18 bins REDUCED the dihedral-only
 # CONTROL's chi2 statistic despite more N_eff -- shape contrast, not just
@@ -505,6 +534,14 @@ def t2_0_2butanol(tmp_path_factory):
     ref_full, force_names = _reference_pe_grid(mol, grids)
     torsion_group = force_names.index("PeriodicTorsionForce")
     ref_dihedral_only, _ = _reference_pe_grid(mol, grids, group_indices=[torsion_group])
+    # FIX (2-butanol T2.0): replace bin-centre PE with sub-grid-averaged PMF so the
+    # coarse 2D-bin Boltzmann weights near the torsion wall are unbiased (see
+    # _subgrid_pmf). Additive; only affects this 2D fixture.
+    ref_full = _subgrid_pmf(mol, {"phi_cc": edges_cc, "phi_oh": edges_oh},
+                            ["phi_cc", "phi_oh"], _T2_0_T, subdiv=4)
+    ref_dihedral_only = _subgrid_pmf(mol, {"phi_cc": edges_cc, "phi_oh": edges_oh},
+                                     ["phi_cc", "phi_oh"], _T2_0_T, subdiv=4,
+                                     group_indices=[torsion_group])
     return dict(
         mol=mol, gchmc=gchmc,
         edges={"phi_cc": edges_cc, "phi_oh": edges_oh},
