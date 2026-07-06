@@ -1389,7 +1389,14 @@ bool Context::attemptREXSwap(int thermoState_C, int thermoState_H) {
             // thermodynamicStates[thermoState_H].calcZMatrixBATStats();
         }
 
-        // if (runType == RUN_TYPE::RENE || runType == RUN_TYPE::RENEMC || runType == RUN_TYPE::REBASONTOP)
+        // GUARD RESTORED (was commented out → fired for plain REMC too, which
+        // pinned the ensemble at the initial structure — runtime-confirmed
+        // ensemble corruption: with ~50% accepted swaps, RMSD-to-initial mean
+        // dropped 0.72 Å → 0.10 Å). For equilibrium REMC the configuration must
+        // stay put on a swap (only the replica↔thermostate map swaps); WORK holds
+        // stale (initial) coords and must NOT overwrite the sampled configuration.
+        // Only the nonequilibrium run-types generate WORK coords worth promoting.
+        if (runType == RUN_TYPE::RENE || runType == RUN_TYPE::RENEMC || runType == RUN_TYPE::REBASONTOP)
         {
             // Update replicas coordinates from work generated coordinates
             set_WORK_CoordinatesAsFinal(replica_X);

@@ -36,8 +36,22 @@ Maintained by Claude (Opus 4.8) on Alex's behalf. Newest entries at top.
 ### Known-unfixed (needs maintainer review / broad GPU-scale testing)
 - **`build_flexibilities` is broken for ALL callers**: returns a nested, pre-converted structure `add_robotic_world` rejects, AND is called with inconsistent arity (`(bonds,mobility,roll)` in examples vs `(bonds)` in `autoblock.py`/`run_ffar1.py`). Root fix = make it return a flat raw-prmtop-index list; touches GPCR-scale callers not cheaply validated. Candidate for a proper fix on this fork now that we can iterate freely.
 
-### In progress
-- Deep-read of the ENTIRE codebase via a 6-agent fleet (Python layer, C++ orchestration, C++ samplers/physics, topology/energy/bindings, build/tests/tools/docs, vendored libs). Synthesis → architecture map + next journal entry.
+### Deep read (6-agent fleet) — headline findings
+
+**🔴 RUNTIME-CONFIRMED + FIXED: REMC ensemble corruption.** `Context::attemptREXSwap` promoted `WORK` coords→final on every accepted swap because the `if (runType == RENE||RENEMC||REBASONTOP)` guard was commented out (`src/Context.cpp:1392`). In plain REMC, `WORK` holds the *initial* structure (never refreshed), so accepted swaps reset both replicas to the start conformation.
+- Verified: 300/301 K, 51 accepted swaps → repl0 RMSD-to-initial mean **0.10 Å, 67/105 frames pinned** (collapsed). No-swap control drifts to 0.72 Å.
+- Fix: restored the guard. Re-verified: same 51 swaps → mean **0.74 Å, 1/105 pinned** (free drift). Fixed.
+- Impact: past robosample REMC ensembles are biased hard toward the starting structure — explains why robosample REMC never gave real E2 conformational sampling (STATUS.md treated it as frame-finder only).
+
+**🟠 Code-confirmed, high-severity (runtime-test pending):**
+- `EnergySnapshot::validate` hard-rejects `|PE/refPE|>10` *before* Metropolis (`EnergySnapshot.cpp:165`) — the codebase's own header documents this as a known ergodicity bug that blocks barrier crossings.
+- Momenta resampled once per round, not per move (`World.cpp:4212`) — breaks HMC detailed balance when `samplesPerRound>1`.
+- `OPENMM::setActiveForceGroup` fully commented out (`OpenMM.cpp:246`) — per-world rigidification never applied to OpenMM energies.
+- Factor-of-2: improper-harmonic torsion missing ×2; `FixmanTorqueExt` `cot` vs `2·cot` (self-flagged `// wrong`).
+
+**🟡 Structural:** only 4 Python modules are the real library; `build_flexibilities`/`create_torsional_bonds`/`selectBonds` all broken vs `add_robotic_world`; OpenMM fork ~stock 8.5, real patches in Simbody/Molmodel forks; sampler test coverage ≈ nil (`test_fixman_potential.py` 100% commented); classic `inp.*` format removed (Python API only).
+
+Full per-subsystem analysis → vault architecture map `30-Resources/Methods/robosample-architecture.md`.
 
 ### Safety
 - Pre-upgrade working `.so` + fix patches backed up: `scratchpad/robosample_working_backup_2026-07-06/`.
