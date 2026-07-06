@@ -31,7 +31,7 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 
 ## Queue (priority order; ✎=in progress ✅=done ✗=failed/skipped)
 - [x] T1.a ✅ disasm API learned (`AmberDihedralClassifier`→`Context(name,seed,clf)`→`load_amber`→worlds→`run_rex`); `attrs` dep installed; module imports
-- [✎] T1.b Tier-1 PE-ladder running (detached `tier1-svc`); then 4 Tier-2 failures
+- [x] T1.b ✅ Tier-1 PE-ladder 7/7 PASS (vs native OpenMM). Tier-2 4-fail reproduction pending.
 - [ ] T1.c INDEPENDENT oracle test: sample known 1D torsion U(φ) → compare histogram to exact exp(−βU)/Z AND native OpenMM MD
 - [ ] T1.d Fix 2-butanol Tier-2 (sub-grid Boltzmann weighting, `test_torsion_conformational.py:306`)
 - [ ] T1.e Ethane equipopulation discriminating run (~20 min): test-side vs real RobotEngine bias?
@@ -43,6 +43,8 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 - [ ] T2.d Fold profiling + A/B numbers into DESIGN.md + this log
 
 ## Ledger (newest first)
+- 23:57 Tier-1 PE-ladder = 7/7 PASSED (robosample vs native OpenMM; benign CUDA-teardown noise). Baseline reproduced.
+- 23:57 T2.2 lead CORRECTED (honest): the test DOES use native-OpenMM references (rigid-scan PE + Langevin MD), sound methodology — so the [0.33,0.33,0.34] is an UNDERSAMPLED native ref (both sides), not wrong methodology, matching the devs' 'stuck/undersampled' note. My well-sampled oracle (~80% anti) is the convergence target both should reach. Next: run robosample-butane well-sampled, confirm it hits ~80% anti.
 - 23:51 T1.c PROGRESS: independent OpenMM oracle for butane C-C-C-C torsion = ~80% anti / 20% gauche (|phi|>2rad=0.798). LEAD: failing Tier-2 T2.2 has robosample anti~0.78 (MATCHES my oracle) vs a [0.33,0.33,0.34] equipop reference that is physically WRONG for butane -> likely a TEST-side bug, not sampler bias (verify next tick). Minor real issue: gauche+/- asymmetry 0.17 vs 0.05 (undersampling). Tier-1 still running.
 - 23:3x T1.a done: API learned, attrs installed, import OK. Tier-1 launched (tier1-svc). E2-free constraint recorded.
 - 23:22 campaign set up; robo_bindings.so built; deadline 07:22.
