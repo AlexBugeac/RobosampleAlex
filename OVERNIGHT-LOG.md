@@ -43,6 +43,7 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 - [ ] T2.d Fold profiling + A/B numbers into DESIGN.md + this log
 
 ## Ledger (newest first)
+- 00:41 cpu-release robo_bindings build DONE (323/323) — accel Phase-B A/B now runnable (CPU .so in build/cpu-release). butane 8000-run ~done. Next: butane verdict, verify 2-butanol fix, then CPU-vs-CUDA wall-clock A/B (swap the python/robosample robo_bindings symlink per-platform between runs).
 - 00:36 accel Phase-B finding: disasm OpenMM platform is COMPILE-TIME (USE_CUDA→always CUDA, no runtime switch) — so CPU-vs-CUDA A/B needs a separate CPU build. Launched cpu-release robo_bindings build in PARALLEL (cpubuild-svc, capped 4G) — CPU-bound, runs alongside GPU sampling. butane 8000-run still going.
 - 00:29 butane 30k-round run killed at 19437 moves (over-long, monopolized GPU); relaunched at 8000 rounds for a faster verdict. GPU is single — runs are sequential; each robosample run ~7-10min.
 - 00:24 ala-dipeptide Ramachandran benchmark script written (robosample phi/psi vs native OpenMM basins, 8000-round budget). Ready to launch when GPU frees. Butane run still going (~15.5k moves) — 30k budget was over-generous; using 8000 for later benchmarks.
