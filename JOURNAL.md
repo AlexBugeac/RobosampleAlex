@@ -43,11 +43,23 @@ Maintained by Claude (Opus 4.8) on Alex's behalf. Newest entries at top.
 - Fix: restored the guard. Re-verified: same 51 swaps → mean **0.74 Å, 1/105 pinned** (free drift). Fixed.
 - Impact: past robosample REMC ensembles are biased hard toward the starting structure — explains why robosample REMC never gave real E2 conformational sampling (STATUS.md treated it as frame-finder only).
 
-**🟠 Code-confirmed, high-severity (runtime-test pending):**
-- `EnergySnapshot::validate` hard-rejects `|PE/refPE|>10` *before* Metropolis (`EnergySnapshot.cpp:165`) — the codebase's own header documents this as a known ergodicity bug that blocks barrier crossings.
-- Momenta resampled once per round, not per move (`World.cpp:4212`) — breaks HMC detailed balance when `samplesPerRound>1`.
-- `OPENMM::setActiveForceGroup` fully commented out (`OpenMM.cpp:246`) — per-world rigidification never applied to OpenMM energies.
-- Factor-of-2: improper-harmonic torsion missing ×2; `FixmanTorqueExt` `cot` vs `2·cot` (self-flagged `// wrong`).
+**Re-assessed after direct code reading + measurement (severity corrected):**
+- **`validate()` ergodicity filter — DOWNGRADED to benign.** The *live* `EnergySnapshot::validate` (`EnergySnapshot.cpp:137`) uses raw ratios `|PE/refPE|>10` (`:165`) and `|KE/refKE|>100000` (`:177`), NOT the modified-relative `is_exploded` formula (that's the commented-out Category-B path). For real systems these essentially never fire (ala-dipeptide PE∈[−134,−39] → ratio max ~3.5; nothing swings KE 1e5×). Earlier "blocks barrier crossings" framing was an over-read; corrected. No fix warranted.
+- **Momentum-refresh cadence — CONFIRMED (conditional).** Velocities drawn only in `reinitialize` (once per round, `World.cpp:4212`); `sampleIteration`'s `perturbVelocities` is commented out (`HMCSampler.cpp:3560`). For `samplesperRound>1` the within-round HMC moves reuse end-state velocities → non-canonical. Impact: **`run_e2_remc_2w.py` (samplesperRound=1) is UNAFFECTED**; **`run_e2_remc_v2.py` (samplesperRound=10) IS affected.** Zero-risk workaround: use `samplesperRound=1` + more rounds. Proper per-move-momentum fix is delicate (needs KE-bookkeeping consistency) — deferred to a validated change. disasm fixed this by construction (per-move).
+- **`setActiveForceGroup` no-op — DOWNGRADED to missed optimization (not a correctness bug).** Verified: both current (`reinitialize:145`, "using OpenMM regardless of" world type) and proposed (`sampleIteration`, `evaluatePotentialEnergyFromPositionsCache`) energies come from OpenMM — NOT "DuMM current vs OpenMM proposed" as the regression audit claimed. With the stub dead, intra-rigid-body energy is included in BOTH; but a torsional move never changes intra-body geometry (Simbody holds bodies rigid) → those terms are constant and cancel in ΔH. The zeroing was an optimization (skip computing constant terms), not needed for correctness.
+- **NMA-boost KE transposition** (`HMCSampler.cpp:3672-3673`, regression audit H2) — real, but ONLY affects `DistortOpt>0` (NMA/boost) runs; standard E2 REMC (DistortOpt=0) unaffected.
+- **Factor-of-2**: improper-harmonic torsion missing ×2 (affects CHARMM impropers only); `FixmanTorqueExt` `cot` vs `2·cot` (self-flagged `// wrong`, only active on Free/Ball-root worlds — refactor enabled it, singularity had it disabled).
+
+### Verified severity synthesis (after runtime + code verification of every "critical" agent claim)
+| Finding | Raw agent severity | VERIFIED verdict | Affects Alex's E2? |
+|---|---|---|---|
+| REMC coord-reset | critical | **CONFIRMED critical, FIXED** (c9e3d46) | YES (2w/v2 both) — now fixed |
+| Momentum once/round | critical | CONFIRMED, only `samplesperRound>1` | v2 only; workaround: use 1 |
+| `validate()` ergodicity filter | critical | **BENIGN** (thresholds never fire; PE ratio max ~3.5 vs 10) | no |
+| `setActiveForceGroup` / A1 mismatch | critical | **NOT a bug** (intra-rigid cancels; both OpenMM) | no |
+| NMA-boost KE transpose | critical | real, `DistortOpt>0` only | no (standard runs) |
+| Metropolis ratio, Fixman | — | verified IDENTICAL to singularity, correct | — |
+**Net: one real ensemble-corrupting bug (REMC, fixed); one conditional (momentum, workaround); the rest benign/boost-only/optimization. The "verify before alarming" discipline overturned 2 of 5 critical claims.**
 
 **🟡 Structural:** only 4 Python modules are the real library; `build_flexibilities`/`create_torsional_bonds`/`selectBonds` all broken vs `add_robotic_world`; OpenMM fork ~stock 8.5, real patches in Simbody/Molmodel forks; sampler test coverage ≈ nil (`test_fixman_potential.py` 100% commented); classic `inp.*` format removed (Python API only).
 
