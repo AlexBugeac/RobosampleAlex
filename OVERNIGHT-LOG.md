@@ -54,6 +54,7 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 - Tier-2 2-butanol failure: root-caused (bin-centre Boltzmann weighting in _chi2_gof_nd for coarse 2D bins
   near torsion walls) + fixed (additive sub-grid PMF averaging; verification in progress).
 - Honest residual: mild gauche+/gauche- asymmetry in butane (0.074 vs 0.126) = finite-sampling artifact.
+- Ala-dipeptide Ramachandran (2nd independent benchmark, peptide backbone): first run flagged a SELF-CAUGHT harness bug (robosample vacuum vs OpenMM OBC2 → invalid); re-running with MATCHED OBC2 (OpenMM ref αR 0.65/β 0.34). Verdict pending — this is the honest apples-to-apples test.
 
 **accel-engine (Topic 2):**
 - 4-pillar GPU/AI research synthesized -> DESIGN.md. Verdict: NOT a full GPU-robot rewrite. 3 tractable
