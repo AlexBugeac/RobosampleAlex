@@ -100,3 +100,6 @@ actually fix the tree:** #3 (cuda.h include — real bug) → #1 (CUDA compiler 
 #2 (BLAS fallback) → #4 (ccache optional) → ship `bootstrap.sh` → #5/#8 (portable + fast
 preset variants). Items #1–#4 are ~10 lines of CMake between them and remove every hard wall.
 </content>
+
+### 11. Undeclared `attrs` Python dependency (disasm)
+`python/robosample/topology.py` does `from attr import dataclass` but `attrs` is not in `envs/*.yaml` or `pyproject`. Fresh env → `ModuleNotFoundError: No module named 'attr'`. Fix: add `attrs` to the conda env spec + pyproject deps.
