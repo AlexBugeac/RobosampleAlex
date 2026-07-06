@@ -88,6 +88,9 @@ hides it by running 1000s of steps on-device between syncs.
 > fp64, MC-exact). Large systems: keep the *whole* loop on-device (Warp fp64 kernels or JAX/MJX
 > fusion). MC-precision is the gate; robotics-fp32 and ML-potentials are both disqualified.
 > MEASURE the per-component wall-time before writing any GPU code.**
+**MEASURED 2026-07-07 (accel Phase-B A/B, ala-dipeptide ~22 atoms, 500 rounds, disasm):**
+`CUDA build 71.3 ms/round vs CPU build 37.0 ms/round → CPU ~1.9x FASTER.` Empirically confirms the research: for small systems the per-step CPU↔GPU round-trip starves the GPU; the CPU/Reference platform is the near-free win. Actionable: default small internal-coord systems to a CPU build/platform.
+
 
 ### Pillar 4 — AI-accelerated sampling  ✅ RESEARCHED
 **Exactness taxonomy (the filter):** A = MH-corrected proposal (exact by construction, degrades
