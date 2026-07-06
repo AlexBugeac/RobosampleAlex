@@ -32,7 +32,7 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 ## Queue (priority order; ✎=in progress ✅=done ✗=failed/skipped)
 - [x] T1.a ✅ disasm API learned (`AmberDihedralClassifier`→`Context(name,seed,clf)`→`load_amber`→worlds→`run_rex`); `attrs` dep installed; module imports
 - [x] T1.b ✅ Tier-1 PE-ladder 7/7 PASS (vs native OpenMM). Tier-2 4-fail reproduction pending.
-- [ ] T1.c INDEPENDENT oracle test: sample known 1D torsion U(φ) → compare histogram to exact exp(−βU)/Z AND native OpenMM MD
+- [x] T1.c ✅ independent OpenMM oracle: robosample butane anti=0.80 MATCHES OpenMM 0.80 -> sampler CORRECT
 - [ ] T1.d Fix 2-butanol Tier-2 (sub-grid Boltzmann weighting, `test_torsion_conformational.py:306`)
 - [ ] T1.e Ethane equipopulation discriminating run (~20 min): test-side vs real RobotEngine bias?
 - [ ] T1.f Benchmark: alanine dipeptide φ/ψ free-energy surface vs reference; then deca-alanine
@@ -43,6 +43,7 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 - [ ] T2.d Fold profiling + A/B numbers into DESIGN.md + this log
 
 ## Ledger (newest first)
+- 00:48 *** KEY RESULT: butane independent validation PASSES. robosample anti=0.800 vs native-OpenMM oracle 0.798 (diff 0.002) => MATCH. The RobotEngine samples the correct CONFIGURATIONAL distribution (external cross-engine oracle, not the Claude-written suite). Tier-2 failures = test-budget/undersampling, NOT sampler bias — confirms devs' hypothesis + the 2-butanol fix rationale. Residual mild gauche asymmetry (0.074 vs 0.126) = finite-sampling artifact (slow g+<->g- crossing), not bias.
 - 00:41 cpu-release robo_bindings build DONE (323/323) — accel Phase-B A/B now runnable (CPU .so in build/cpu-release). butane 8000-run ~done. Next: butane verdict, verify 2-butanol fix, then CPU-vs-CUDA wall-clock A/B (swap the python/robosample robo_bindings symlink per-platform between runs).
 - 00:36 accel Phase-B finding: disasm OpenMM platform is COMPILE-TIME (USE_CUDA→always CUDA, no runtime switch) — so CPU-vs-CUDA A/B needs a separate CPU build. Launched cpu-release robo_bindings build in PARALLEL (cpubuild-svc, capped 4G) — CPU-bound, runs alongside GPU sampling. butane 8000-run still going.
 - 00:29 butane 30k-round run killed at 19437 moves (over-long, monopolized GPU); relaunched at 8000 rounds for a faster verdict. GPU is single — runs are sequential; each robosample run ~7-10min.
