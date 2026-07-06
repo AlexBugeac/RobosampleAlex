@@ -33,12 +33,22 @@ def run_test():
         acceptRejectMode=robosample.rb.AcceptRejectMode.MetropolisHastings,
     )
 
-    # Add torsional world
+    # Add torsional world.
+    # NOTE: build_flexibilities() returns a nested + pre-converted structure that
+    # add_robotic_world() does not accept (it expects a FLAT list of BondFlexibility
+    # carrying RAW prmtop atom indices, which it converts to BAT internally). Build
+    # that flat list directly — this is the working pattern used by production drivers.
     dihs = ["phi", "psi"]
     bonds = context.standard_dihedral_bonds.loc[
         context.standard_dihedral_bonds["dihedral_type"].isin(dihs)
     ]
-    sele = context.build_flexibilities(bonds, robosample.rb.BondMobility.Torsion, True)
+    sele = []
+    for _, bond in bonds.iterrows():
+        flex = robosample.rb.BondFlexibility()
+        flex.globalIndex1 = int(bond["atom1_parmed_index"])
+        flex.globalIndex2 = int(bond["atom2_parmed_index"])
+        flex.mobility = robosample.rb.BondMobility.Torsion
+        sele.append(flex)
     context.add_robotic_world(sele).add_sampler(
         timeStep=0.01,
         mdSteps=10,

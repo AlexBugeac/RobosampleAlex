@@ -113,6 +113,14 @@ class Context(rb.Context):
         testing: bool = False,
     ):
 
+        # Guard: write_freq == 0 otherwise triggers a division-by-zero deep in the
+        # C++ writer (opaque Floating Point Exception / core dump). Fail early and clearly.
+        if write_freq is None or write_freq < 1:
+            raise ValueError(
+                f"write_freq must be a positive integer (got {write_freq}); "
+                "write_freq=0 crashes with a Floating Point Exception in the writer."
+            )
+
         super().__init__(
             name,
             seed,
