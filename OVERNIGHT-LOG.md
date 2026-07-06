@@ -58,7 +58,9 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 **accel-engine (Topic 2):**
 - 4-pillar GPU/AI research synthesized -> DESIGN.md. Verdict: NOT a full GPU-robot rewrite. 3 tractable
   MC-exact wins: CPU platform for small systems, batched-replica REMC (JAX, ~10-50x), learned-CV OPES world.
-- Phase-B enabler: CPU + CUDA builds both done; A/B harness ready (accel_ab.sh); measurement pending.
+- **Phase-B MEASURED: CPU 37 vs CUDA 71 ms/round → CPU ~1.9x FASTER** on ala-dipeptide — empirically
+  confirms the research (CPU beats CUDA for small systems; per-step round-trip starves GPU). The
+  'near-free win' (#1 recommendation) is real and validated on the actual disasm code.
 - Build ergonomics: 3 configure-blockers + attrs dep documented in BUILD-NOTES.md (+ bootstrap.sh proposal).
 
 **Bottom line so far:** disasm's RobotEngine is validated correct on kinetic, PE-ladder, AND (independently)
