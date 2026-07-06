@@ -56,7 +56,7 @@ def main():
         use_nuts=False, use_fixman=True)
     ctx.initialize([T])
     # generous budget: 2x the test's prod (equil 200, prod 30000)
-    ctx.run_rex(200, 30000, 1, False)
+    ctx.run_rex(200, 8000, 1, False)
 
     traj = md.load(base + ".0.dcd", top=str(PRMTOP))
     phi_robo = md.compute_dihedrals(traj, [DIH])[:, 0].astype(float)

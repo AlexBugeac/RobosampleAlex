@@ -43,6 +43,7 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 - [ ] T2.d Fold profiling + A/B numbers into DESIGN.md + this log
 
 ## Ledger (newest first)
+- 00:29 butane 30k-round run killed at 19437 moves (over-long, monopolized GPU); relaunched at 8000 rounds for a faster verdict. GPU is single — runs are sequential; each robosample run ~7-10min.
 - 00:24 ala-dipeptide Ramachandran benchmark script written (robosample phi/psi vs native OpenMM basins, 8000-round budget). Ready to launch when GPU frees. Butane run still going (~15.5k moves) — 30k budget was over-generous; using 8000 for later benchmarks.
 - 00:18 2-butanol Tier-2 FIX implemented (additive): _subgrid_pmf helper (sub-grid-averaged bin PMF) + wired ONLY into the 2D 2-butanol fixture via existing ref_pe_grid arg (subdiv=4). _chi2_gof_nd + all 1D tests untouched; does NOT loosen bands. Syntax OK. UNVERIFIED (GPU busy w/ butane) — verify next tick via pytest -k 2butanol.
 - 00:10 2-butanol Tier-2 bug FULLY diagnosed: _chi2_gof_nd (test_torsion_conformational.py:~305) uses w=exp(-beta*ref_pe_grid) at BIN CENTRE; for coarse 2D bins (36deg/axis, _N_BINS_2D=10) near a torsion wall the bin-AVERAGED Boltzmann weight != centre value -> chi2=9055 (test-side, not sampler). Fix = evaluate PE on a KxK finer sub-grid per coarse bin, average exp(-beta*U) per bin (mirror KE-Gamma gammaSubsampledWeights). Implementing next tick. butane run still going.
