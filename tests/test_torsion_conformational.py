@@ -538,9 +538,9 @@ def t2_0_2butanol(tmp_path_factory):
     # coarse 2D-bin Boltzmann weights near the torsion wall are unbiased (see
     # _subgrid_pmf). Additive; only affects this 2D fixture.
     ref_full = _subgrid_pmf(mol, {"phi_cc": edges_cc, "phi_oh": edges_oh},
-                            ["phi_cc", "phi_oh"], _T2_0_T, subdiv=4)
+                            ["phi_cc", "phi_oh"], _T2_0_T, subdiv=8)
     ref_dihedral_only = _subgrid_pmf(mol, {"phi_cc": edges_cc, "phi_oh": edges_oh},
-                                     ["phi_cc", "phi_oh"], _T2_0_T, subdiv=4,
+                                     ["phi_cc", "phi_oh"], _T2_0_T, subdiv=8,
                                      group_indices=[torsion_group])
     return dict(
         mol=mol, gchmc=gchmc,
