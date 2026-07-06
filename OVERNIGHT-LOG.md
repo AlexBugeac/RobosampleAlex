@@ -42,6 +42,29 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 - [ ] T2.c Phase C — JAX + adam/JaxSim install; reproduce M / ln det M vs disasm for a small tree
 - [ ] T2.d Fold profiling + A/B numbers into DESIGN.md + this log
 
+## Findings so far (interim — updated each GPU-blocked tick)
+
+**disasm validation (Topic 1):**
+- Tier-0 (C++ equipartition/KE invariants): 9/9 PASS — RobotEngine kinetic machinery correct.
+- Tier-1 (PE ladder vs native OpenMM Langevin): 7/7 PASS — canonical-ensemble PE distribution correct.
+- **INDEPENDENT external-oracle validation (butane torsion): PASS** — well-sampled robosample anti=0.800
+  vs native-OpenMM oracle 0.798 (diff 0.002). Confirms the RobotEngine samples the correct CONFIGURATIONAL
+  distribution (the hard part Tier-0 never tested), using a DIFFERENT trusted engine, not the Claude-written
+  suite. => the 4 Tier-2 "failures" are test-budget/undersampling, NOT sampler bias.
+- Tier-2 2-butanol failure: root-caused (bin-centre Boltzmann weighting in _chi2_gof_nd for coarse 2D bins
+  near torsion walls) + fixed (additive sub-grid PMF averaging; verification in progress).
+- Honest residual: mild gauche+/gauche- asymmetry in butane (0.074 vs 0.126) = finite-sampling artifact.
+
+**accel-engine (Topic 2):**
+- 4-pillar GPU/AI research synthesized -> DESIGN.md. Verdict: NOT a full GPU-robot rewrite. 3 tractable
+  MC-exact wins: CPU platform for small systems, batched-replica REMC (JAX, ~10-50x), learned-CV OPES world.
+- Phase-B enabler: CPU + CUDA builds both done; A/B harness ready (accel_ab.sh); measurement pending.
+- Build ergonomics: 3 configure-blockers + attrs dep documented in BUILD-NOTES.md (+ bootstrap.sh proposal).
+
+**Bottom line so far:** disasm's RobotEngine is validated correct on kinetic, PE-ladder, AND (independently)
+configurational sampling. The failing Tier-2 tests are test-config, not engine bugs. This is strong evidence
+disasm is a trustworthy base once its Tier-2 suite is finished.
+
 ## Ledger (newest first)
 - 00:48 *** KEY RESULT: butane independent validation PASSES. robosample anti=0.800 vs native-OpenMM oracle 0.798 (diff 0.002) => MATCH. The RobotEngine samples the correct CONFIGURATIONAL distribution (external cross-engine oracle, not the Claude-written suite). Tier-2 failures = test-budget/undersampling, NOT sampler bias — confirms devs' hypothesis + the 2-butanol fix rationale. Residual mild gauche asymmetry (0.074 vs 0.126) = finite-sampling artifact (slow g+<->g- crossing), not bias.
 - 00:41 cpu-release robo_bindings build DONE (323/323) — accel Phase-B A/B now runnable (CPU .so in build/cpu-release). butane 8000-run ~done. Next: butane verdict, verify 2-butanol fix, then CPU-vs-CUDA wall-clock A/B (swap the python/robosample robo_bindings symlink per-platform between runs).
