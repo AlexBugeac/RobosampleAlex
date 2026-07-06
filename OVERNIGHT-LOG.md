@@ -66,6 +66,7 @@ configurational sampling. The failing Tier-2 tests are test-config, not engine b
 disasm is a trustworthy base once its Tier-2 suite is finished.
 
 ## Ledger (newest first)
+- 01:05 accel A/B CPU-half parallel attempt FAILED (ImportError 'circular import' from copied CPU package — copy artifact or CPU .so load issue). Deferred: run accel_ab.sh via the in-place symlink swap when GPU frees (tested path). 2-butanol verify (v2but-svc) still running (~18min, long 2D GCHMC).
 - 00:48 *** KEY RESULT: butane independent validation PASSES. robosample anti=0.800 vs native-OpenMM oracle 0.798 (diff 0.002) => MATCH. The RobotEngine samples the correct CONFIGURATIONAL distribution (external cross-engine oracle, not the Claude-written suite). Tier-2 failures = test-budget/undersampling, NOT sampler bias — confirms devs' hypothesis + the 2-butanol fix rationale. Residual mild gauche asymmetry (0.074 vs 0.126) = finite-sampling artifact (slow g+<->g- crossing), not bias.
 - 00:41 cpu-release robo_bindings build DONE (323/323) — accel Phase-B A/B now runnable (CPU .so in build/cpu-release). butane 8000-run ~done. Next: butane verdict, verify 2-butanol fix, then CPU-vs-CUDA wall-clock A/B (swap the python/robosample robo_bindings symlink per-platform between runs).
 - 00:36 accel Phase-B finding: disasm OpenMM platform is COMPILE-TIME (USE_CUDA→always CUDA, no runtime switch) — so CPU-vs-CUDA A/B needs a separate CPU build. Launched cpu-release robo_bindings build in PARALLEL (cpubuild-svc, capped 4G) — CPU-bound, runs alongside GPU sampling. butane 8000-run still going.
