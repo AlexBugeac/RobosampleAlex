@@ -21,7 +21,10 @@ measurements** (not just literature). Zero E2 involvement; 3 E2 sims protected &
   αR↔C7eq ratio, **not** sampler bias. (Two self-caught *harness* bugs en route: solvent mismatch,
   then an int-code φ/ψ filter — never the engine.)
 - 2-butanol Tier-2: root-caused (bin-centre Boltzmann weighting) + fixed (sub-grid PMF), chi2
-  9055→590 (15×); still over strict crit — understood as reference-resolution/test-budget. [close-out: <status>]
+  9055→**539** (~17×). Reference now converged (subdiv 4→8: 590→539, barely moved) ⟹ residual is
+  robosample 2D sampling/autocorrelation, **not** the weighting. Still fails the strict α=1e-4 GOF
+  (539 vs crit 160); a small residual 2D effect isn't excluded by chi2 alone, but the clean 1D butane
+  oracle points to sampling budget. **Partial close: reference bug fixed; sampling residual open+honest.**
 
 **Topic 2 — accel-engine direction (measured)**
 - 4-pillar GPU/AI research → DESIGN.md. Verdict: **not** a full GPU-robot rewrite; MC-precision is
@@ -32,7 +35,7 @@ measurements** (not just literature). Zero E2 involvement; 3 E2 sims protected &
   first** (Pillar 3); batched-replica GPU ABA (Pillar 2) is the at-scale/secondary target.
 
 **Honest residuals / not done:** ala dmax 0.19 not driven to <0.12 (would need matched DOF or REMC);
-2-butanol strict-crit close-out [<status>]; JAX batched-replica PoC (Phase C) not started; profiler
+2-butanol strict-crit GOF still failing (chi2 539 vs 160) — reference fixed, sampling residual open; JAX batched-replica PoC (Phase C) not started; profiler
 force-server split is a coarse estimate. **Build ergonomics:** BUILD-NOTES.md (3 configure blockers +
 attrs dep + bootstrap.sh proposal).
 
@@ -108,6 +111,7 @@ explained by flexible-DOF/undersampling, not bias). Every 'divergence' chased to
 (solvent mismatch, then int-code phi/psi filter), never the engine. Strong evidence disasm is a trustworthy base.
 
 ## Ledger (newest first)
+- 02:43 *** 2-butanol Tier-2 CLOSE-OUT (last open item): subdiv=8 → chi2 539.38 (dof99, crit160, alpha1e-4, n_used7500). vs subdiv=4's 590 → reference now CONVERGED (finer grid barely moved it). Diagnosis confirmed: residual is NOT reference weighting (that bug is fixed: 9055→539, ~17x total) but robosample 2D sampling/autocorrelation at this budget. Test still fails the STRICT chi2 GOF (539 vs 160, 3.4x) — honestly, a small residual 2D effect is not fully EXCLUDED by chi2 alone, but the clean 1D butane oracle (anti 0.80=0.80) points to sampling budget over engine bias. Kept subdiv=8 (converged, strictly better). Partial close: reference bug fixed & understood; sampling residual left open+honest. ALL planned work now complete.
 - 02:16 *** accel Phase-A MEASURED (completes A+B): ala-dipeptide CUDA round = 65.5 ms; force-server 40.0 ms (61%) vs dynamics+Fixman+accept 25.5 ms (39%). FORCE-SERVER DOMINATES → confirms Pillar 3 (round-trip/CPU platform) is the #1 accel target; ties to Phase-B (CPU 1.9x faster = removing this 61%). Pillar 2 (ABA) secondary at 39%. Coarse estimate (native-OpenMM getState loop) but directionally solid. profiler exit 0 (CUDA teardown errors = harmless cleanup noise). E2 sims untouched.
 - 02:11 *** ala-dipeptide RESOLVED (proper backbone test): explicit-pair fix WORKED. robosample phi now FULLY MOBILE (std 25.7, range 358deg, 91.8% in correct phi<0 region — was frozen 8.1%). Both basins populated: robosample αR 0.325/C7eq 0.675 vs OpenMM αR 0.509/C7eq 0.489. dmax 0.19 (down from 0.66). Residual is NOT phi and NOT a gross bias — it's the αR/C7eq RATIO (a psi-basin balance), which is famously sensitive to (a) flexible-DOF choice (robosample backbone-only vs OpenMM all-atom) and (b) finite-round sampling of the slow αR↔C7eq interconversion at single-T. CONCLUSION: engine explores the solvated backbone correctly (right regions, both basins, phi mobile); quantitative ratio within 0.19, explained by model/sampling not bias. Would tighten with matched DOF or REMC. Phase-A profiler launched (profa-svc).
 - 02:05 ala explicit-pair fix CONFIRMED ACTIVE: 'flexible backbone pairs (phi/psi): [(3,7),(7,10),(16,17),(17,20)]' NON-EMPTY — all 4 backbone dihedrals now mobilized (vs empty before). robosample sampling (3788/8000); OpenMM-OBC2 ref αR 0.51/β 0.49. Verdict next tick. Also prepped accel Phase-A coarse profiler (tests/profile_phase_a.py): splits per-round time into OpenMM force-server vs dynamics+Fixman → tells us whether to attack round-trip (Pillar 3) or CPU-serial ABA (Pillar 2) first. Ready to launch once GPU frees.
