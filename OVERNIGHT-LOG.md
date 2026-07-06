@@ -43,5 +43,6 @@ builds) but never read, used, or referenced. All benchmarks + oracle tests use g
 - [ ] T2.d Fold profiling + A/B numbers into DESIGN.md + this log
 
 ## Ledger (newest first)
+- 23:51 T1.c PROGRESS: independent OpenMM oracle for butane C-C-C-C torsion = ~80% anti / 20% gauche (|phi|>2rad=0.798). LEAD: failing Tier-2 T2.2 has robosample anti~0.78 (MATCHES my oracle) vs a [0.33,0.33,0.34] equipop reference that is physically WRONG for butane -> likely a TEST-side bug, not sampler bias (verify next tick). Minor real issue: gauche+/- asymmetry 0.17 vs 0.05 (undersampling). Tier-1 still running.
 - 23:3x T1.a done: API learned, attrs installed, import OK. Tier-1 launched (tier1-svc). E2-free constraint recorded.
 - 23:22 campaign set up; robo_bindings.so built; deadline 07:22.
