@@ -91,6 +91,14 @@ hides it by running 1000s of steps on-device between syncs.
 **MEASURED 2026-07-07 (accel Phase-B A/B, ala-dipeptide ~22 atoms, 500 rounds, disasm):**
 `CUDA build 71.3 ms/round vs CPU build 37.0 ms/round → CPU ~1.9x FASTER.` Empirically confirms the research: for small systems the per-step CPU↔GPU round-trip starves the GPU; the CPU/Reference platform is the near-free win. Actionable: default small internal-coord systems to a CPU build/platform.
 
+**MEASURED 2026-07-07 (accel Phase-A coarse profile, ala-dipeptide, CUDA, 400 rounds, mdSteps=50):**
+`robosample full round 65.5 ms | OpenMM force-server ~40.0 ms (61%) | dynamics+Fixman+accept ~25.5 ms (39%)`.
+The per-step force-server round-trip DOMINATES (61%) on CUDA. Coherent with Phase-B (CPU 1.9x faster): the
+61% is exactly the CPU↔GPU transfer that the CPU/Reference platform removes. ⟹ **Pillar 3 (kill the
+round-trip / CPU platform for small systems) is the correct first attack; Pillar 2 (CPU-serial ABA+Fixman,
+39%) is the secondary/at-scale target.** Caveat: force-server estimated via a native-OpenMM getState loop —
+coarse (±), directionally solid. Phase A + B now both measured.
+
 
 ### Pillar 4 — AI-accelerated sampling  ✅ RESEARCHED
 **Exactness taxonomy (the filter):** A = MH-corrected proposal (exact by construction, degrades
