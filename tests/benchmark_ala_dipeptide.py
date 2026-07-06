@@ -61,7 +61,10 @@ def robosample_rama():
     outdir = Path(tempfile.mkdtemp(prefix="robo_ala_", dir=str(SCRATCH))); os.chdir(outdir)
     base = "ala_rama"
     ctx = robosample.Context(base, 42, robosample.AmberDihedralClassifier())
-    ctx.load_amber(str(PRMTOP), str(RST7)); ctx.set_enforce_periodic_box(False)
+    # MUST match the OpenMM reference potential: OpenMM uses implicitSolvent=OBC2,
+    # so robosample must too — else robosample runs in VACUUM (C7eq/beta-dominant)
+    # while OpenMM is solvated (alphaR-dominant), an apples-to-oranges comparison.
+    ctx.load_amber(str(PRMTOP), str(RST7), use_gbsa_obc2=True); ctx.set_enforce_periodic_box(False)
     df = ctx.standard_dihedral_bonds
     bonds = df[df["dihedral_type"].isin(["phi", "psi"])] if "dihedral_type" in df.columns else df
     sele = ctx.build_flexibilities(bonds, rb.JointType.Torsion, False)
