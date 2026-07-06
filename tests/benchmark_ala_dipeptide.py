@@ -65,9 +65,19 @@ def robosample_rama():
     # so robosample must too — else robosample runs in VACUUM (C7eq/beta-dominant)
     # while OpenMM is solvated (alphaR-dominant), an apples-to-oranges comparison.
     ctx.load_amber(str(PRMTOP), str(RST7), use_gbsa_obc2=True); ctx.set_enforce_periodic_box(False)
-    df = ctx.standard_dihedral_bonds
-    bonds = df[df["dihedral_type"].isin(["phi", "psi"])] if "dihedral_type" in df.columns else df
-    sele = ctx.build_flexibilities(bonds, rb.JointType.Torsion, False)
+    # Select backbone phi (N-CA) + psi (CA-C) rotatable bonds by EXPLICIT atom-index pairs
+    # (the validated butane pattern). NOTE: standard_dihedral_bonds' 'dihedral_type' column is
+    # INTEGER codes, not strings — filtering .isin(["phi","psi"]) silently returns empty and
+    # freezes the backbone. parmed gives us the atom names; map prmtop->global index.
+    g = ctx.prmtop_to_global_index
+    struct = pmd.load_file(str(PRMTOP))
+    pairs = []
+    for r in struct.residues:
+        nm = {a.name: a.idx for a in r.atoms}
+        if "N" in nm and "CA" in nm: pairs.append((int(g[nm["N"]]),  int(g[nm["CA"]])))  # phi
+        if "CA" in nm and "C" in nm: pairs.append((int(g[nm["CA"]]), int(g[nm["C"]])))   # psi
+    print(f"robosample flexible backbone pairs (phi/psi): {pairs}")
+    sele = ctx.build_flexibilities(pairs, rb.JointType.Torsion, False)
     ctx.add_cartesian_world().add_sampler(timeStep=0.001, mdSteps=20,
         acceptRejectMode=rb.AcceptRejectMode.MetropolisHastings, use_nuts=False, use_fixman=False)
     ctx.add_robotic_world(sele).add_sampler(timeStep=0.004, mdSteps=50,
