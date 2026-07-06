@@ -40,7 +40,7 @@ class Sampler:
 class World:
     fixman_torque: bool
     samples_per_round: int
-    roll_flexibilities: list[rb.BondFlexibility]
+    roll_flexibilities: list[list[rb.BondFlexibility]]
     is_cartesian: bool
     samplers: list[Sampler]
     want_spatial_force_history: bool
@@ -988,23 +988,21 @@ class Context(rb.Context):
         samplesperRound: int = 1,
         want_spatial_force_history: bool = False,
     ):
-        """# !!!!!!!!!!!!!!!!!!!!! torsional bonds are in prmtop order, we reorder them in bat coordinates inside this function !!!!!!!!!!!!!!!!!!!!!"""
+        """Torsional bonds must use prmtop atom indices in globalIndex1/globalIndex2.
+        Converts them to BAT global indices internally via prmtop_to_global_index."""
 
-        # # Reorder torsional bonds to match the global indices used in Robosample
-        # torsional_bonds_reordered = []
-
-        # for b in torsional_bonds:
-        #     assert b.mobility == rb.BondMobility.Torsion, "Only torsional flexibilities are supported in torsional world. Rigid bonds are implicitly defined by the absence of a flexibility."
-
-        #     # This map holds (a,b) and (b,a)
-        #     id = bond_params.get((b.i, b.j))
-        #     assert id is not None, f"Bond between atoms {b.i} and {b.j} not found in bond indices"
-        #     torsional_bonds_reordered.append(rb.BondFlexibility(self.prmtop_to_global_index[b.i], self.prmtop_to_global_index[b.j], b.mobility))
+        converted = []
+        for b in torsional_bonds:
+            bf = rb.BondFlexibility()
+            bf.globalIndex1 = self.prmtop_to_global_index[b.globalIndex1]
+            bf.globalIndex2 = self.prmtop_to_global_index[b.globalIndex2]
+            bf.mobility = b.mobility
+            converted.append(bf)
 
         w = World(
             fixman_torque=True,
             samples_per_round=samplesperRound,
-            roll_flexibilities=torsional_bonds,
+            roll_flexibilities=[converted],
             is_cartesian=False,
             samplers=list[Sampler](),
             want_spatial_force_history=want_spatial_force_history,

@@ -919,6 +919,12 @@ void Context::addThermodynamicState(SimTK::Real T,
                                     const std::vector<int>& argWorldIndexes,
                                     const std::vector<SimTK::Real>& timestepsInThisReplica,
                                     const std::vector<int>& mdstepsInThisReplica) {
+    // Reserve capacity before first emplace_back to prevent vector reallocation
+    // from moving (and thereby closing) already-open std::ofstream members.
+    if (thermodynamicStates.empty()) {
+        thermodynamicStates.reserve(64);
+    }
+
     // Allocate and construct
     thermodynamicStates.emplace_back(ThermodynamicState(nofThermodynamicStates,
                                                         T,
@@ -1490,7 +1496,10 @@ void Context::mixReplicas(int mixi, int oddity) {
         return;
     }
 
-    // 2. Perform the swaps
+    // 2. Build the exchange pair list for this round (alternating even/odd pairs)
+    prepareExchangePairs(mixi, oddity);
+
+    // 3. Perform the swaps
     for (const auto& [thermoState_i, thermoState_j] : exchangePairList) {
         attemptREXSwap(thermoState_i, thermoState_j);
     }
