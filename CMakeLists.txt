@@ -739,3 +739,22 @@ if(BUILD_TESTING)
   endforeach()
 
 endif(BUILD_TESTING)
+
+# ---------------------------------------------------------------------------
+# Documentation pipeline (Doxygen + Graphviz + Markdown indexes).
+# Usage:  cmake --build <builddir> --target docs
+# Equivalent to:  python3 scripts/generate_docs.py   (the primary entry point)
+# ---------------------------------------------------------------------------
+find_package(Doxygen QUIET COMPONENTS dot)
+if(DOXYGEN_FOUND)
+    add_custom_target(docs
+        COMMAND ${CMAKE_COMMAND} -E echo "Generating Robosample docs (Doxygen + Markdown indexes)…"
+        COMMAND python3 ${CMAKE_SOURCE_DIR}/scripts/generate_docs.py
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Doxygen HTML/XML + curated Markdown indexes -> docs/generated/"
+        VERBATIM)
+else()
+    add_custom_target(docs
+        COMMAND ${CMAKE_COMMAND} -E echo "Doxygen/Graphviz not found — install them, or run python3 scripts/generate_docs.py"
+        VERBATIM)
+endif()
