@@ -5,11 +5,12 @@
 (fork AlexBugeac/RobosampleAlex) — all night's work committed here, tagged `[disasm]`/`[accel]`;
 branch reorganization is a morning cleanup.
 
-## ☀️ MORNING REPORT (draft — finalize at 07:22)
+## ☀️ MORNING REPORT (FINAL — 2026-07-07 07:22 EEST · 8h autonomous run complete)
 
 **TL;DR:** Both topics delivered concrete, measured, honest results. disasm's RobotEngine is
 validated correct on **four independent axes**; the accel direction is now backed by **two live
-measurements** (not just literature). Zero E2 involvement; 3 E2 sims protected & untouched.
+measurements** (not just literature). Zero E2 involvement throughout; E2 sims never touched (they
+cycle by design under a parallel Jarvis session — verified via intent-log, no interference).
 
 **Topic 1 — disasm validation & benchmarks**
 - Tier-0 (C++ kinetic/equipartition invariants): **9/9 PASS**.
