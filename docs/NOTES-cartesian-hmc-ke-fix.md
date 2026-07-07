@@ -106,3 +106,66 @@ ala, mdSteps=200: OFF 342 ms/round -> ON 251 ms/round = ~1.36x, sampling unchang
 the per-atom host round-trip (the auditors' flagged bottleneck). Use it ON for the race.
 Honest: still slow per-step vs OpenMM MD, so robosample only wins where MD is TRAPPED -- for
 ala that is the alphaL/phi=0 crossing (MD barely visits alphaL). Race built on that.
+
+## Metric #2 (faster) -- the full investigation and why the paper claim is NOT yet validated
+
+### Step 1: robosample-vs-OpenMM barrier-crossing race (C7ax/alphaL escape) -- a CATEGORY ERROR
+Built a fair race: start both engines INSIDE C7ax/alphaL (phi~+60, structure at
+`examples/ala-dipeptide-c7ax.rst7`, built by `tests/make_c7ax_start.py`: restrain phi->+60
+psi->-70, minimize, 50 ps relax -> phi=63 psi=-67), race the ESCAPE across phi=0. Metric =
+crossings per wall-second AND per force-evaluation, 300 K, OBC2, CUDA kinematics ON.
+Result (seed1, decisive): **OpenMM 96 crossings, robosample 0** -- MD reached the ~40% alphaL
+equilibrium, robosample stayed trapped. OpenMM faster 192x/wall-s, 7.9x/force-eval.
+Tuning check (`tests/robo_escape_tuned.py`, mdSteps=1500 + beefy Cartesian): robosample DID
+cross once (genuine phi=0 vault +69->-84 into alphaR, NOT a +-180 wrap), confirming the 0 was
+partly a tuning artifact -- but still 192x/8x behind MD. NOTE: run exited with CUDA teardown
+errors (array-deletion on context destruction, AFTER the result printed -> GPU-cleanup bug in
+the fused-kinematics shutdown path; benign to the result, worth filing).
+
+**Why this was the wrong test:** read the actual papers (`references/papers/spiridon_2017_cdhmc_gibbs`,
+`spiridon_2020_robosample` -- paper.md has full content, checks.md has regression numbers).
+EVERY efficiency claim in both papers is MIXED-world vs FULLY-FLEXIBLE *within robosample*;
+OpenMM only supplies forces and is NEVER the baseline. The headline (2020 Table 4) is alphaL
+phi=0-crossing MFPT measured in MD-STEPS (per integrator step), Rama-mixed vs fully-flexible:
+flex ~491, mixed-TD ~49 (units steps/200) => ~10x. 2017 sec 3.4: "per integrator step, MIXED
+more efficient than UDHMC." So "is robosample faster than OpenMM in wall-clock" is a question
+the paper never asks. The paper even predicts the 300 K trap: "torsional dynamics may be less
+efficient at low temperature ... combination with replica exchange" (2017 future work).
+
+### Step 2: the paper's ACTUAL claim (vacuum alphaL MFPT, mixed vs flexible) -- CENSORED/CENSORED
+`tests/vacuum_mfpt.py`: vacuum, start in alphaL, measure integrator-steps to first phi=0
+crossing, fully-flexible (108x1.87fs) vs Rama-mixed (1 flex + 10 torsional 11x44.73fs, the
+paper's tuned params), 3 seeds. Paper target (Table 4 alphaL row /200): flex ~491, mixed ~49.
+RESULT: **both censored** -- fully-flexible all 3 seeds hit 432k steps with 0 crossings
+(phi explored 16-99, stuck in alphaL well, psi ranged fully -149..79 so sampler works);
+Rama-mixed hit 130k steps (600 rounds) with 0 crossings (85% torsional acceptance, phi 49-90).
+Cannot compute a ratio.
+
+Three compounding reasons it did not reproduce (NOT a refutation of the paper):
+1. **Wrong force field.** prmtop is **ff19SB** (has CMAP, XC atom type). Paper used ff12SB
+   (2017) / ff14SB (2020), NO CMAP. CMAP reshapes the phi/psi landscape and alphaL depth.
+   Proof it differs: all 3 flex seeds censored at 432k = 4.4x the paper's 98k-step MFPT;
+   P(0 crossings)=e^-4.4 per seed, ~2e-6 for all three if the FF matched.
+2. **Constraint solver fails at the paper's own tuned 44.73 fs step.** disasm velocity-corrector
+   does NOT converge (relative change up to ~22 >> tol 1e-4, capped at 10 iters). Step still
+   taken (trajectory-Metropolis keeps correctness) but torsional PROPOSALS are degraded -> phi
+   never reaches the TS. Original Simbody presumably converged here. **Likely a disasm
+   constraint-solver regression at large dt -- the most actionable branch finding.**
+3. **Step budget 100x too small:** ~1e5 steps/run vs the paper's 1e7.
+
+### What a real validation requires (not yet done)
+- Rebuild alanine with the paper's FF (ff12SB or ff14SB, NO CMAP) so alphaL MFPT ~ the paper's.
+- Fix/relax the disasm constraint tolerance OR retune the torsional step DOWN to where the
+  solver converges, then re-tune to ~0.651 acceptance (paper's optimal).
+- Run to ~1e7 steps/run, 3+ seeds; compare mixed vs fully-flexible MFPT in MD-steps -> expect ~10x.
+- Cheaper correctness fixtures worth doing first: butane Shirts test (slope 0.13363; MIXED-TD
+  got 0.13357; GAFF/AM1-BCC 300+450 K) and the 4-bead uniform-torsion test (Fixman on/off).
+
+### Honest scorecard for the disasm branch this session
+- **PE-correct (metric #1): VALIDATED** -- the KE/HMC-acceptance bug fix (above) is real and holds.
+- **Throughput: 1.36x** fused CUDA kinematics (`ROBO_CUDA_KINEMATICS=1`) -- real.
+- **Paper's sampling speedup: NOT validated, NOT refuted** -- setup mismatch (FF, solver-at-large-dt,
+  step budget). Two concrete branch bugs surfaced: (a) constraint solver non-convergence at 44.73 fs;
+  (b) CUDA array-teardown errors on context destruction in the fused-kinematics path.
+- Test scripts: `tests/make_c7ax_start.py`, `tests/trapped_race.py`, `tests/robo_escape_tuned.py`,
+  `tests/vacuum_mfpt.py`, `tests/timed_robo.py`.
