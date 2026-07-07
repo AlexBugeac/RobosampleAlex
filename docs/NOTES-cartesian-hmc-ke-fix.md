@@ -81,3 +81,9 @@ alanine-dipeptide and check:
 - PE-histogram comparison is only valid for the MIXED (full-ensemble) protocol, not
   torsional-only (constrained ensemble genuinely has a different P(U)). For the mixed
   protocol it is a legitimate, stringent convergence test.
+
+## Verification — acceptance level (PASSED)
+After rebuild, cartesian-only alanine (dt=1.5fs, mdSteps=40):
+- **Cartesian acceptance: 15% → 76%** (healthy HMC).
+- **KE now recorded**: ~100–140 kJ/mol per move (was 0.0).
+Next: confirm the PE histogram of the MIXED protocol closes onto OpenMM (metric #1).
