@@ -54,3 +54,6 @@ coverage/
 # tools folder
 tools/demo
 tools/genFlex.old
+
+# Intermediate DOT for the architecture PNG (PNG itself is committed)
+docs/generated/*.dot

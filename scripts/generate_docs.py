@@ -56,6 +56,10 @@ def run_indexes():
                         "--repo", str(REPO)], cwd=REPO)
     if r.returncode != 0:
         sys.exit(f"error: index generator exited {r.returncode}")
+    # best-effort class-level architecture PNG (needs dot; non-fatal if it fails)
+    ag = subprocess.run([sys.executable, str(REPO / "scripts" / "gen_arch_graph.py")], cwd=REPO)
+    if ag.returncode != 0:
+        print("      (architecture PNG skipped — see above)")
 
 
 def main():
