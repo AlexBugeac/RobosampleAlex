@@ -60,6 +60,16 @@ def run_indexes():
     ag = subprocess.run([sys.executable, str(REPO / "scripts" / "gen_arch_graph.py")], cwd=REPO)
     if ag.returncode != 0:
         print("      (architecture PNG skipped — see above)")
+    # best-effort AST-accurate clang call graph (needs libclang + compile_commands.json)
+    print("[3/3] Clang AST call graph (if libclang + compile_commands.json available) …")
+    cg = subprocess.run([sys.executable, str(REPO / "scripts" / "gen_clang_callgraph.py")], cwd=REPO)
+    if cg.returncode == 0:
+        subprocess.run([sys.executable, str(REPO / "scripts" / "gen_arch_graph.py"),
+                        "--edges-json", "docs/generated/clang-class-edges.json",
+                        "--source", "Clang AST",
+                        "--out", "docs/generated/architecture-graph-clang.png"], cwd=REPO)
+    else:
+        print("      (clang call graph skipped — libclang/compile_commands.json missing)")
 
 
 def main():

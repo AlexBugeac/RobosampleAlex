@@ -51,6 +51,28 @@ Optional (not used by the default pipeline): `clang-uml` / `clang-doc` over
 | `ARCHITECTURE.md` | Hand-maintained architecture map. |
 | `docs/USAGE_CALLGRAPH.md` | Hand-maintained task-oriented call-graph index. |
 
+## Live / AST-accurate call graph (Clang)
+
+Doxygen's call graphs are *syntactic* (see limitations below). For **AST-accurate** edges
+that resolve template and statically-virtual calls, the pipeline also runs a libclang pass
+over `compile_commands.json`:
+
+- `scripts/gen_clang_callgraph.py` → `docs/generated/CLANG_CALLGRAPH_INDEX.md` +
+  `clang-class-edges.json`. Regenerated from the compiler each run — the "live" source of
+  truth. On this repo it resolves **~62 class-level call edges vs Doxygen's ~37** (≈50 that
+  Doxygen misses, mostly calls into the templated articulated-body math types).
+- `docs/generated/architecture-graph-clang.png` — the AST-accurate class graph (exposes the
+  `Vec3`/`SpatialVec`/`Transform`/`Mat33`/`ArticulatedInertia` math layer and its call
+  weights). Compare with the Doxygen-based `architecture-graph.png`.
+
+Needs `python -m pip show clang` (libclang bindings) + a `libclang.so`; both are present here.
+The pass is best-effort — if libclang is missing, the rest of the pipeline still runs.
+
+**Live call hierarchy in your editor.** The repo's `.clangd` already points clangd at a
+compilation database (`build/latest`) with `Index.Background`, so any clangd editor (nvim
+LSP, VS Code, CLion) gives **live incoming/outgoing Call Hierarchy** on any symbol —
+resolved from the real compiler index and updated as you type. No extra setup.
+
 ## Limitations (be aware)
 
 - **Descriptions come from existing comments only.** This codebase has plentiful `//`

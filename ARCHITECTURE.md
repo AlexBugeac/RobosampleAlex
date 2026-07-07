@@ -131,8 +131,11 @@ Run `python3 scripts/generate_docs.py`, then:
 
 > **Trust boundary for the call graphs.** Doxygen's call/caller graphs are *syntactic* —
 > they resolve calls by name/signature, so **virtual dispatch, template instantiations, and
-> function-pointer/`std::function` callbacks are under-represented**. Treat the graphs as a
-> navigation aid, not a complete dynamic trace. For ground-truth call edges on the
-> template-heavy core, a Clang-AST tool (`clang-uml` / `clang-doc`) over the existing
-> `build/*/compile_commands.json` is the escalation path — intentionally left out of the
-> default pipeline to keep it simple.
+> function-pointer/`std::function` callbacks are under-represented**. For **AST-accurate**
+> edges the pipeline also runs a libclang pass (`scripts/gen_clang_callgraph.py`) over
+> `compile_commands.json` → `docs/generated/CLANG_CALLGRAPH_INDEX.md` and
+> `architecture-graph-clang.png`; on this repo it finds ~50 class-level edges Doxygen misses
+> (mostly the templated math layer). For **live** call hierarchy while editing, the repo's
+> `.clangd` already enables clangd's background index — use your editor's Call Hierarchy.
+> Function-pointer/`std::function` indirection is still invisible to both (it needs runtime
+> tracing).
