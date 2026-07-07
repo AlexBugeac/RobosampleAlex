@@ -87,3 +87,14 @@ After rebuild, cartesian-only alanine (dt=1.5fs, mdSteps=40):
 - **Cartesian acceptance: 15% → 76%** (healthy HMC).
 - **KE now recorded**: ~100–140 kJ/mol per move (was 0.0).
 Next: confirm the PE histogram of the MIXED protocol closes onto OpenMM (metric #1).
+
+## Verification — PE level (PASSED — metric #1 ACHIEVED)
+Mixed GCHMC (torsional + fixed Cartesian) on alanine-dipeptide, 1500 rounds, after the fix:
+- torsional acceptance 94%, **cartesian acceptance 72%** (was ~15%).
+- **robosample PE: mean -104.0, std 15.4**  vs OpenMM mean ~-100, std ~15.1.
+- Before the fix it was mean -130, std 8.8 (offset ~30 kJ/mol, too narrow).
+=> The ~30 kJ/mol PE offset is CLOSED; mean AND width now match OpenMM. The mixed
+protocol reproduces OpenMM's P(U). The entire PE gap was the PE-only acceptance bug.
+
+Remaining: metric #2 (faster) needs the setCudaKinematics python binding + a properly
+trapped system + the audit-compliant race design.
