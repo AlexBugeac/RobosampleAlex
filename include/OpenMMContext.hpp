@@ -57,6 +57,11 @@ class OpenMMContext {
         ensureInitialized();
         return kineticEnergy;
     }
+    // Fresh kinetic energy queried from the device (reflects the CURRENT velocities),
+    // as opposed to getKineticEnergy() which returns the last cached value. Used by
+    // the Cartesian-world HMC to build the acceptance Hamiltonian H = PE + KE for the
+    // just-drawn and post-trajectory velocities. Defined in the .cpp (needs OpenMM).
+    [[nodiscard]] auto calcKineticEnergy() -> double;
 
     // OpenMM's own degrees-of-freedom count for the whole system, matching the
     // convention OpenMM's StateDataReporter uses: 3 per particle with nonzero

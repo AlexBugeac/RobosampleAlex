@@ -662,6 +662,15 @@ auto OpenMMContext::computePotentialEnergy(const std::vector<OpenMM::Vec3>& posi
     return potentialEnergy;
 }
 
+// Fresh kinetic energy for the current device velocities (for the Cartesian HMC
+// acceptance Hamiltonian). Does NOT touch positions -- caller has already set them.
+auto OpenMMContext::calcKineticEnergy() -> double {
+    ensureInitialized();
+    const auto state = context->getState(OpenMM::State::Energy, enforcePeriodicBox);
+    kineticEnergy = state.getKineticEnergy();
+    return kineticEnergy;
+}
+
 auto OpenMMContext::computePotentialEnergyByGroup(const std::vector<OpenMM::Vec3>& positions)
     -> std::pair<double, std::vector<OpenMMContext::ForceGroupEnergy>> {
     ensureInitialized();

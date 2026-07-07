@@ -1463,21 +1463,30 @@ bool World::generateSample() {
         savedPosG_.assign(state_.atomPosG(), state_.atomPosG() + model_.numAtoms);
         bridge_.setAtomPositionsInGround(state_);
         const double peOld = bridge_.calcPotentialEnergy();
+        // HMC (symplectic Verlet): draw momenta, integrate, accept on the FULL
+        // Hamiltonian H = PE + KE. The previous code accepted on PE alone (KE never
+        // pulled back), which rejects every PE-uphill move whose KE dropped to conserve
+        // H -- giving ~15% acceptance and a low-PE-biased ensemble that never thermalizes
+        // the stiff (bond/angle) DOF. That was the root cause of the mixed-protocol PE
+        // offset (robosample ~-130 vs OpenMM ~-100 kJ/mol on alanine-dipeptide).
         bridge_.setVelocitiesToTemperature(temperature_, static_cast<int>(rng_()));
+        const double keOld = bridge_.calcKineticEnergy();
         bridge_.integrateTrajectoryOnDevice(state_, sampler_.mdSteps, sampler_.timeStep);
         const double peNew = bridge_.calcPotentialEnergy();
+        const double keNew = bridge_.calcKineticEnergy();
         state_.energy.pe = peNew;
-        state_.energy.ke = 0.0; // device kinetic energy not pulled back here
+        state_.energy.ke = keNew;
         state_.energy.fixman = 0.0;
         state_.energy.logSineSqrGamma2 = 0.0;
-        state_.energy.total = peNew;
-        if (metropolis(peOld, peNew)) {
+        state_.energy.total = peNew + keNew;
+        if (metropolis(peOld + keOld, peNew + keNew)) {
             lastAccepted_ = true;
             return true;
         }
         std::copy(savedPosG_.begin(), savedPosG_.end(), state_.atomPosG());
         state_.energy.pe = peOld;
-        state_.energy.total = peOld;
+        state_.energy.ke = keOld;
+        state_.energy.total = peOld + keOld;
         lastAccepted_ = false;
         return false;
     }

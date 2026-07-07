@@ -57,6 +57,13 @@ class ForceBridge {
         return OpenMMContext::get().computePotentialEnergy(posCache_);
     }
 
+    // Kinetic energy of the CURRENT device velocities [kJ/mol]. The Cartesian MD world
+    // needs this for its HMC acceptance H = PE + KE; unlike the internal-coordinate
+    // worlds it has no host-side KE, so query the device directly.
+    [[nodiscard]] robo::Real calcKineticEnergy() const {
+        return OpenMMContext::get().calcKineticEnergy();
+    }
+
     // OpenMM -> Robosample: read per-atom Cartesian forces and assemble per-body
     // spatial forces about each body's origin, expressed in Ground:
     //   bodyForceG[b].linear  += f_a
