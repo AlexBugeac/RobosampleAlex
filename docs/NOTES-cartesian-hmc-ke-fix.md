@@ -98,3 +98,11 @@ protocol reproduces OpenMM's P(U). The entire PE gap was the PE-only acceptance 
 
 Remaining: metric #2 (faster) needs the setCudaKinematics python binding + a properly
 trapped system + the audit-compliant race design.
+
+## Metric #2 (faster) — step 2a: fused CUDA kinematics
+`ROBO_CUDA_KINEMATICS=1` enables the disasm fused GPU robot-kinematics path (env-controlled,
+no binding/rebuild needed; `setCudaKinematics` only overrides the env default). Torsional
+ala, mdSteps=200: OFF 342 ms/round -> ON 251 ms/round = ~1.36x, sampling unchanged. It kills
+the per-atom host round-trip (the auditors' flagged bottleneck). Use it ON for the race.
+Honest: still slow per-step vs OpenMM MD, so robosample only wins where MD is TRAPPED -- for
+ala that is the alphaL/phi=0 crossing (MD barely visits alphaL). Race built on that.
